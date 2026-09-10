@@ -3,10 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#150720">
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png">
-<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
 <meta name="robots" content="noindex">
 <title>Orders · WGMA 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,7 +24,6 @@ label{display:block;font-size:.74rem;letter-spacing:.2em;color:var(--gold);margi
 input{width:100%;padding:12px 14px;background:rgba(0,0,0,.35);border:1px solid var(--line);color:#fff;font-family:'Jost',sans-serif;font-size:1rem}
 input:focus{outline:2px solid var(--gold);outline-offset:1px}
 button{font-family:'Jost',sans-serif;cursor:pointer}
-.linkish{background:none;border:0;color:var(--gold);font-size:.82rem;letter-spacing:.1em;text-decoration:underline;padding:0}
 .main-btn{width:100%;margin-top:16px;padding:13px;background:var(--gold);border:0;color:var(--ink);font-size:.9rem;letter-spacing:.16em;font-weight:500}
 .main-btn:hover{background:var(--gold-lift)}
 
@@ -48,12 +43,6 @@ button{font-family:'Jost',sans-serif;cursor:pointer}
 .order-ref{color:var(--gold-lift);letter-spacing:.1em;font-size:.95rem}
 .tag{font-size:.68rem;letter-spacing:.16em;padding:4px 10px;border:1px solid var(--line);color:#c9b6d8;white-space:nowrap}
 .tag.paid{color:var(--ink);background:var(--gold);border-color:var(--gold)}
-.tier-chip{font-size:.68rem;letter-spacing:.16em;padding:4px 10px;border:1px solid var(--line);color:var(--gold-pale);white-space:nowrap}
-.tier-chip.vip{color:var(--ink);background:var(--gold-lift);border-color:var(--gold-lift);font-weight:500}
-.order-top{flex-wrap:wrap}
-.door-result .tier-line{font-family:'Jost',sans-serif;letter-spacing:.18em;font-size:.8rem;margin-bottom:10px;color:var(--gold)}
-.door-result.yes.vip{border-color:var(--gold-lift)}
-.door-result.yes.vip h2{color:var(--gold-lift)}
 .order-body{margin-top:10px;font-size:.9rem;color:#e7dcf0;line-height:1.75}
 .order-body em{font-style:normal;color:#c9b6d8}
 .acts{display:flex;gap:8px;margin-top:14px}
@@ -91,7 +80,7 @@ button{font-family:'Jost',sans-serif;cursor:pointer}
 
   <div id="app" hidden>
     <h1>WGMA orders</h1>
-    <p class="sub">Mark Lynk payments received and the ticket sends itself &nbsp;·&nbsp; <button id="lock" class="linkish">Lock</button></p>
+    <p class="sub">Mark Lynk payments received and the ticket sends itself</p>
 
     <div class="stats" id="stats"></div>
 
@@ -120,47 +109,24 @@ let VIEW = 'pending';
 let DATA = { orders: [], summary: {} };
 
 const $ = id => document.getElementById(id);
-// Buyers type their own name. It never goes into the page unescaped.
-const esc = s => String(s == null ? '' : s)
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const api = (url, opts = {}) => fetch(url, {
   ...opts,
   headers: { 'Content-Type': 'application/json', 'x-admin-key': KEY, ...(opts.headers || {}) }
 });
 const money = (n, cur) => (cur === 'JMD' ? '$' : 'US$') + Number(n).toLocaleString('en-US');
 
-$('enter').addEventListener('click', () => unlock());
+$('enter').addEventListener('click', unlock);
 $('key').addEventListener('keydown', e => { if (e.key === 'Enter') unlock(); });
 
-// Held for this tab only, so a refresh at the door does not mean retyping a
-// long random key on a phone. Closing the tab forgets it.
-const remember = k => { try { sessionStorage.setItem('wgmaKey', k); } catch {} };
-const recall = () => { try { return sessionStorage.getItem('wgmaKey') || ''; } catch { return ''; } };
-const forget = () => { try { sessionStorage.removeItem('wgmaKey'); } catch {} };
-
-async function unlock(fromStore) {
-  KEY = fromStore || $('key').value.trim();
-  if (!KEY) return;
+async function unlock() {
+  KEY = $('key').value.trim();
   const res = await api('/api/admin/orders');
-  if (!res.ok) {
-    forget();
-    const d = await res.json().catch(() => ({}));
-    $('gateMsg').className = 'msg error';
-    $('gateMsg').textContent = d.error === 'Wrong key' || !d.error ? 'That key did not work.' : d.error;
-    return;
-  }
-  remember(KEY);
+  if (!res.ok) { $('gateMsg').className = 'msg error'; $('gateMsg').textContent = 'That key did not work.'; return; }
   DATA = await res.json();
   $('gate').hidden = true;
   $('app').hidden = false;
   render();
 }
-
-$('lock').addEventListener('click', () => { forget(); location.reload(); });
-
-const saved = recall();
-if (saved) unlock(saved);
 
 async function refresh() {
   const res = await api('/api/admin/orders');
@@ -181,8 +147,6 @@ function render() {
   $('stats').innerHTML = `
     <div class="stat"><span>TICKETS SOLD</span><strong>${s.ticketsSold || 0}</strong></div>
     <div class="stat"><span>WAITING</span><strong>${s.pending || 0}</strong></div>
-    <div class="stat"><span>GENERAL</span><strong>${s.gaSold || 0}</strong></div>
-    <div class="stat"><span>VIP</span><strong>${s.vipSold || 0}</strong></div>
     <div class="stat"><span>TAKINGS JMD</span><strong>${money(s.takingsJMD || 0, 'JMD')}</strong></div>
     <div class="stat"><span>TAKINGS USD</span><strong>${money(s.takingsUSD || 0, 'USD')}</strong></div>`;
 
@@ -199,20 +163,19 @@ function render() {
   $('list').innerHTML = rows.map(o => `
     <div class="order ${o.status}">
       <div class="order-top">
-        <span class="order-ref">${esc(o.reference)}</span>
-        <span class="tier-chip ${o.tier === 'vip' ? 'vip' : ''}">${o.tier === 'vip' ? 'VIP' : 'GENERAL'}</span>
+        <span class="order-ref">${o.reference}</span>
         <span class="tag ${o.status}">${o.status === 'paid' ? 'PAID' : (o.method === 'lynk' ? 'LYNK' : 'CARD')}</span>
       </div>
       <div class="order-body">
-        ${esc(o.name)}<br>
-        <em>${esc(o.email)}</em>${o.phone ? `<br><em>${esc(o.phone)}</em>` : ''}<br>
-        ${o.quantity} ticket(s) &middot; ${money(o.total, o.currency)} ${esc(o.currency)}
+        ${o.name}<br>
+        <em>${o.email}</em>${o.phone ? `<br><em>${o.phone}</em>` : ''}<br>
+        ${o.quantity} ticket(s) &middot; ${money(o.total, o.currency)} ${o.currency}
         ${o.usedAt ? '<br><em>Admitted at the door</em>' : ''}
       </div>
       ${o.status === 'pending' ? `
       <div class="acts">
-        <button data-confirm="${esc(o.reference)}">Payment received</button>
-        <button class="ghost" data-cancel="${esc(o.reference)}">Cancel</button>
+        <button data-confirm="${o.reference}">Payment received</button>
+        <button class="ghost" data-cancel="${o.reference}">Cancel</button>
       </div>` : ''}
     </div>`).join('');
 
@@ -224,8 +187,7 @@ function render() {
 
 async function confirmPaid(reference, btn) {
   const o = DATA.orders.find(x => x.reference === reference);
-  const label = o.tier === 'vip' ? 'VIP' : 'General Admission';
-  if (!confirm(`Confirm ${money(o.total, o.currency)} received from ${o.name}?\n\n${o.quantity} x ${label}. This sends their ticket straight away.`)) return;
+  if (!confirm(`Confirm ${money(o.total, o.currency)} received from ${o.name}?\n\nThis sends their ticket straight away.`)) return;
 
   btn.disabled = true;
   btn.textContent = 'Sending ticket…';
@@ -262,11 +224,10 @@ async function checkDoor() {
     return;
   }
 
-  box.className = 'door-result yes' + (d.tier === 'vip' ? ' vip' : '');
+  box.className = 'door-result yes';
   box.innerHTML = `
-    <p class="tier-line">${esc((d.tierName || 'General Admission').toUpperCase())}</p>
     <h2>Admit</h2>
-    <p>${esc(d.name)}<br>${Number(d.quantity) || 0} ticket(s)</p>
+    <p>${d.name}<br>${d.quantity} ticket(s)</p>
     ${d.usedAt ? `<p style="color:#ffcf8a;margin-top:12px">Already scanned at ${new Date(d.usedAt).toLocaleTimeString()}</p>` : ''}
     <button class="main-btn" id="admit">Mark as admitted</button>`;
 
