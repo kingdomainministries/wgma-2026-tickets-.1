@@ -462,13 +462,8 @@ document.querySelectorAll('.btn[data-method]').forEach(btn => {
     const msg = $('msg');
     msg.className = 'msg';
 
-    // Lynk settles in JMD only and GA only
+    // Lynk settles in JMD only
     if (method === 'lynk') {
-      if (tier === 'vip') {
-        msg.className = 'msg error';
-        msg.textContent = 'Lynk is available for General Admission only. Please select General Admission to use Lynk.';
-        return;
-      }
       currency = 'JMD';
       $('phoneField').hidden = false;
       paint();
