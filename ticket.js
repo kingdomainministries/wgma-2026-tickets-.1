@@ -1,15 +1,43 @@
 const Jimp = require('jimp');
 const QRCode = require('qrcode');
 const path = require('path');
+const fs = require('fs');
 
-async function buildTicket(order, outputPath) {
+/**
+ * Builds a ticket image with QR code and returns it as a JPEG buffer.
+ * @param {Object} order - Order details { reference, name, tier, quantity, total, currency, email, ... }
+ * @param {Object} tier - Tier details { id, name, price, art }
+ * @param {Object} event - Event details { name, date, time, venue }
+ * @returns {Promise<Buffer>} JPEG image buffer
+ */
+async function buildTicket(order, tier, event) {
+  // Validate inputs
+  if (!order || !tier || !event) {
+    throw new Error('buildTicket requires order, tier, and event objects');
+  }
+
+  if (!order.reference) {
+    throw new Error('Order missing reference code');
+  }
+
+  if (!tier.art) {
+    throw new Error(`Tier "${tier.id}" missing artwork file (art property)`);
+  }
+
   try {
-    // Load ticket background
-    const ticketImagePath = path.join(__dirname, 'public', order.image);
-    const ticketImage = await Jimp.read(ticketImagePath);
+    // Load ticket artwork
+    const artPath = path.join(__dirname, 'public', 'img', tier.art);
 
-    // Generate QR code
-    const qrDataUrl = await QRCode.toDataURL(order.orderId, {
+    // Verify artwork exists
+    if (!fs.existsSync(artPath)) {
+      throw new Error(`Artwork not found: ${artPath}`);
+    }
+
+    const ticketImage = await Jimp.read(artPath);
+    console.log(`Loaded artwork: ${tier.art} (${ticketImage.getWidth()}x${ticketImage.getHeight()})`);
+
+    // Generate QR code as PNG buffer
+    const qrBuffer = await QRCode.toBuffer(order.reference, {
       errorCorrectionLevel: 'H',
       type: 'image/png',
       quality: 0.92,
@@ -17,26 +45,37 @@ async function buildTicket(order, outputPath) {
       width: 300
     });
 
-    // Convert data URL to buffer
-    const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
     const qrImage = await Jimp.read(qrBuffer);
 
-    // Resize QR code to fit ticket
+    // Resize QR code to fit on ticket (typically 200x200)
     qrImage.resize(200, 200);
 
-    // Composite QR code onto ticket (bottom right corner)
-    ticketImage.composite(qrImage, ticketImage.getWidth() - 220, ticketImage.getHeight() - 220);
+    // Composite QR code onto ticket (bottom right area, with padding)
+    const ticketWidth = ticketImage.getWidth();
+    const ticketHeight = ticketImage.getHeight();
+    const qrSize = 200;
+    const padding = 20;
 
-    // Ensure output directory exists
-    const outputDir = path.dirname(outputPath);
-    const fs = require('fs');
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
+    const qrX = ticketWidth - qrSize - padding;
+    const qrY = ticketHeight - qrSize - padding;
 
-    // Save ticket
-    await ticketImage.write(outputPath);
-    console.log(`Ticket generated: ${outputPath}`);
+    ticketImage.composite(qrImage, qrX, qrY);
+    console.log(`Composited QR code at (${qrX}, ${qrY})`);
+
+    // Convert to JPEG buffer and return
+    // Use a Promise wrapper for the callback-based API in Jimp 0.22
+    const jpegBuffer = await new Promise((resolve, reject) => {
+      ticketImage
+        .quality(90)
+        .getBuffer('image/jpeg', (err, buffer) => {
+          if (err) reject(err);
+          else resolve(buffer);
+        });
+    });
+
+    console.log(`Ticket generated successfully for ${order.reference}: ${jpegBuffer.length} bytes`);
+
+    return jpegBuffer;
   } catch (error) {
     console.error('Ticket generation error:', error.message);
     throw error;
