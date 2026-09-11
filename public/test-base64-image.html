@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Base64 Image Rendering Test</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f5f5f5;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      font-size: 24px;
+      color: #333;
+    }
+
+    .info {
+      background: #e8f4f8;
+      border: 1px solid #b3d9e8;
+      border-radius: 4px;
+      padding: 16px;
+      margin-bottom: 30px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .test-section {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .test-section h2 {
+      font-size: 18px;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    .image-container {
+      background: #fafafa;
+      border: 2px dashed #ddd;
+      border-radius: 4px;
+      padding: 16px;
+      text-align: center;
+      min-height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .image-container img {
+      max-width: 100%;
+      max-height: 500px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .no-image {
+      color: #999;
+      font-size: 16px;
+    }
+
+    .button-test {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    .tier-btn {
+      position: relative;
+      border: 3px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+      overflow: hidden;
+      border-radius: 4px;
+      aspect-ratio: 506/606;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+
+    .tier-btn:hover {
+      border-color: #4CAF50;
+    }
+
+    .tier-btn img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Base64 Image Rendering Test</h1>
+    <div class="info">
+      This page tests whether base64-encoded JPEG images render correctly.
+      If images appear below, the base64 embedding works and the issue is likely deployment-related or a cache problem.
+    </div>
+
+    <div class="test-section">
+      <h2>Test 1: Simple img tag with inline src</h2>
+      <div class="image-container" id="simple-test">
+        <span class="no-image">Image failed to load or JavaScript is disabled</span>
+      </div>
+      <div class="status" id="simple-status"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 2: Buttons with images (like tier selector)</h2>
+      <div class="button-test" id="button-test">
+        <button class="tier-btn" type="button">
+          <img src="" alt="Loading GA ticket...">
+        </button>
+        <button class="tier-btn" type="button">
+          <img src="" alt="Loading VIP ticket...">
+        </button>
+      </div>
+      <div class="status" id="button-status"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>Debug Info</h2>
+      <div id="debug-info" style="font-family: monospace; font-size: 12px; background: #f5f5f5; padding: 12px; border-radius: 4px; white-space: pre-wrap; word-break: break-all;"></div>
+    </div>
+  </div>
+
+  <script>
+    // Test with minimal valid JPEG base64 data (100x100 pixel test image)
+    // This is a valid JPEG that renders as a solid color square
+    const testJpegBase64 = '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8VAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmY/9k=';
+
+    function updateDebugInfo() {
+      const debugDiv = document.getElementById('debug-info');
+      const info = `
+Deployment Checklist:
+✓ Images embedded as base64 data URIs
+? Changes committed to GitHub (git add ., git commit, git push)
+? Render has redeployed (check dashboard - should take 30-60 seconds)
+? Hard refresh performed (Cmd+Shift+R on Mac, Ctrl+Shift+R on Windows/Linux)
+
+If images appear below but not on main site:
+1. Open DevTools (F12 or Cmd+Option+I)
+2. Go to Network tab
+3. Refresh main site
+4. Look for index.html response - check its size (should be 44KB+)
+5. Search for "data:image/jpeg" in the response - it should be there
+
+Current page base64 length: ${testJpegBase64.length} characters
+      `.trim();
+      debugDiv.textContent = info;
+    }
+
+    function onImageLoad(testName, statusId) {
+      return function() {
+        const statusEl = document.getElementById(statusId);
+        statusEl.textContent = `✓ ${testName}: Image loaded successfully!`;
+        statusEl.className = 'status success';
+      };
+    }
+
+    function onImageError(testName, statusId) {
+      return function() {
+        const statusEl = document.getElementById(statusId);
+        statusEl.textContent = `✗ ${testName}: Image failed to load`;
+        statusEl.className = 'status error';
+      };
+    }
+
+    // Load test images
+    function loadImages() {
+      // Test 1: Simple image
+      const simpleContainer = document.getElementById('simple-test');
+      const img1 = new Image();
+      img1.onload = function() {
+        simpleContainer.innerHTML = '';
+        simpleContainer.appendChild(img1);
+        onImageLoad('Simple img tag', 'simple-status')();
+      };
+      img1.onerror = onImageError('Simple img tag', 'simple-status');
+      img1.src = 'data:image/jpeg;base64,' + testJpegBase64;
+
+      // Test 2: Button images (if you have the actual GA/VIP base64, paste them below)
+      // For now, using the same test image for both
+      const buttons = document.querySelectorAll('.tier-btn img');
+      buttons.forEach((img, index) => {
+        img.onload = onImageLoad('Button image', 'button-status');
+        img.onerror = onImageError('Button image', 'button-status');
+        img.src = 'data:image/jpeg;base64,' + testJpegBase64;
+      });
+    }
+
+    // Run tests when page loads
+    window.addEventListener('load', function() {
+      loadImages();
+      updateDebugInfo();
+    });
+  </script>
+</body>
+</html>
