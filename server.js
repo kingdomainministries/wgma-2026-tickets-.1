@@ -354,9 +354,16 @@ async function mailTicket(order) {
   let hero = '';
   try {
     const png = await buildTicket(order, tier, EVENT);
-    attachments.push({ filename: `wgma-ticket-${order.reference}.jpg`, content: png.toString('base64'), type: 'image/jpeg', encoding: 'base64' });
+    attachments.push({
+      filename: `wgma-ticket-${order.reference}.jpg`,
+      content: png.toString('base64'),
+      type: 'image/jpeg',
+      encoding: 'base64',
+      contentId: `ticket-${order.reference}`,
+      disposition: 'inline'
+    });
     hero = `<div style="margin:0 0 24px">
-      <img src="data:image/jpeg;base64,${png.toString('base64')}" width="468" alt="${esc(tier.name)} ticket ${esc(order.reference)}"
+      <img src="cid:ticket-${order.reference}" width="468" alt="${esc(tier.name)} ticket ${esc(order.reference)}"
            style="width:100%;max-width:468px;display:block;border:1px solid #d4a534">
       <p style="font-size:12px;color:#c9b6d8;margin:8px 0 0">Save this image. It is your ticket.</p>
     </div>`;
@@ -365,7 +372,14 @@ async function mailTicket(order) {
   }
 
   const qr = await QRCode.toBuffer(order.reference, { width: 320, margin: 1 });
-  attachments.push({ filename: `wgma-qr-${order.reference}.png`, content: qr.toString('base64'), type: 'image/png', encoding: 'base64' });
+  attachments.push({
+    filename: `wgma-qr-${order.reference}.png`,
+    content: qr.toString('base64'),
+    type: 'image/png',
+    encoding: 'base64',
+    contentId: `qr-${order.reference}`,
+    disposition: 'inline'
+  });
 
   const html = shell(`
     <p style="margin:0 0 20px">Give thanks, ${esc(order.name)}. Your ticket is confirmed.</p>
@@ -377,7 +391,7 @@ async function mailTicket(order) {
       ${row('Reference', esc(order.reference), true)}
     </table>
     <div style="text-align:center;margin:26px 0">
-      <img src="data:image/png;base64,${qr.toString('base64')}" width="180" alt="Ticket code ${esc(order.reference)}" style="background:#fff;padding:10px">
+      <img src="cid:qr-${order.reference}" width="180" alt="Ticket code ${esc(order.reference)}" style="background:#fff;padding:10px">
       <p style="font-size:12px;color:#c9b6d8;margin:10px 0 0">Show this at the door</p>
     </div>
     <table style="width:100%;border-top:1px solid rgba(212,165,52,.4);font-size:14px">
