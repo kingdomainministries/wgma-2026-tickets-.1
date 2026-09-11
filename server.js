@@ -354,7 +354,7 @@ async function mailTicket(order) {
   let hero = '';
   try {
     const png = await buildTicket(order, tier, EVENT);
-    attachments.push({ filename: `wgma-ticket-${order.reference}.jpg`, content: png.toString('base64'), type: 'image/jpeg' });
+    attachments.push({ filename: `wgma-ticket-${order.reference}.jpg`, content: png.toString('base64'), type: 'image/jpeg', encoding: 'base64' });
     hero = `<div style="margin:0 0 24px">
       <img src="data:image/jpeg;base64,${png.toString('base64')}" width="468" alt="${esc(tier.name)} ticket ${esc(order.reference)}"
            style="width:100%;max-width:468px;display:block;border:1px solid #d4a534">
@@ -365,7 +365,7 @@ async function mailTicket(order) {
   }
 
   const qr = await QRCode.toBuffer(order.reference, { width: 320, margin: 1 });
-  attachments.push({ filename: `wgma-qr-${order.reference}.png`, content: qr.toString('base64'), type: 'image/png' });
+  attachments.push({ filename: `wgma-qr-${order.reference}.png`, content: qr.toString('base64'), type: 'image/png', encoding: 'base64' });
 
   const html = shell(`
     <p style="margin:0 0 20px">Give thanks, ${esc(order.name)}. Your ticket is confirmed.</p>
